@@ -43,6 +43,7 @@
         }
         .answered { background-color: #43A047; color: white; }
         .current { background-color: #1E88E5; color: white; }
+        .timer-warning { color: #E53935; font-weight: bold; }
     </style>
 </head>
 <body class="bg-lightGray min-h-screen">
@@ -158,7 +159,7 @@
                         <h3 class="font-semibold text-secondary">Recent Alerts</h3>
                         <span id="alertCount" class="alert-badge inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-warningRed rounded-full">0</span>
                     </div>
-                    <div id="alertsList" class="space-y-3">
+                    <div id="alertsList" class="space-y-3 max-h-48 overflow-y-auto">
                         <!-- Alerts will be populated dynamically -->
                     </div>
                 </div>
@@ -188,29 +189,46 @@
     </div>
 
     <!-- Audio for Alerts -->
-    <audio id="alert_sound" src="https://www.soundjay.com/buttons/beep-01a.mp3" preload="auto"></audio>
+    <audio id="alert_sound" src="{{ url_for('static', filename='beep-01a.mp3') }}" preload="auto"></audio>
 
     <script>
-        let currentQuestionIndex = {{ current_question_number - 1 }};
-        const totalQuestions = {{ total_questions }};
+        // Initialize variables with error handling
+        let currentQuestionIndex = {{ current_question_number - 1 | default(0) }};
+        const totalQuestions = {{ total_questions | default(0) }};
         const questions = [
-            {% for question in questions %}
-            {
-                id: {{ question.id }},
-                text: "{{ question.question_text }}",
-                answers: [
-                    {% for answer in question.answers %}
-                    { id: {{ answer.id }}, text: "{{ answer.answer_text }}" },
-                    {% endfor %}
-                ]
-            },
-            {% endfor %}
+            {% if questions %}
+                {% for question in questions %}
+                {
+                    id: {{ question.id | default(0) }},
+                    text: "{{ question.question_text | escape }}",
+                    answers: [
+                        {% if question.answers %}
+                            {% for answer in question.answers %}
+                            { id: {{ answer.id | default(0) }}, text: "{{ answer.answer_text | escape }}" },
+                            {% endfor %}
+                        {% else %}
+                            []
+                        {% endif %}
+                    ]
+                },
+                {% endfor %}
+            {% else %}
+                []
+            {% endif %}
         ];
         const answers = new Map(); // Store selected answers client-side
         const examDuration = 60 * 60; // 1 hour in seconds (adjust as needed)
-        let timeRemaining = examDuration;
+        let timeRemaining = localStorage.getItem('examTimeRemaining') ? parseInt(localStorage.getItem('examTimeRemaining')) : examDuration;
+
+        // Error handling for initialization
+        if (!totalQuestions || questions.length === 0) {
+            console.error("No questions available for the exam.");
+            document.body.innerHTML = "<p class='text-center text-warningRed pt-20'>Error: No questions available. Please contact support.</p>";
+            return;
+        }
 
         function updateQuestion() {
+            if (currentQuestionIndex >= totalQuestions || currentQuestionIndex < 0) return;
             const question = questions[currentQuestionIndex];
             document.getElementById('questionHeader').textContent = `Question ${currentQuestionIndex + 1} of ${totalQuestions}`;
             document.getElementById('questionText').textContent = question.text;
@@ -245,6 +263,8 @@
             const selected = document.querySelector(`input[name="answer_${questions[currentQuestionIndex].id}"]:checked`);
             if (selected) {
                 answers.set(questions[currentQuestionIndex].id, parseInt(selected.value));
+            } else {
+                answers.delete(questions[currentQuestionIndex].id); // Clear answer if none selected
             }
         }
 
@@ -257,7 +277,12 @@
             const hours = Math.floor(timeRemaining / 3600);
             const minutes = Math.floor((timeRemaining % 3600) / 60);
             const seconds = timeRemaining % 60;
-            document.getElementById('timer').textContent = `Time Remaining: ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            const timerElement = document.getElementById('timer');
+            timerElement.textContent = `Time Remaining: ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            if (timeRemaining <= 300) { // Warn at 5 minutes remaining
+                timerElement.classList.add('timer-warning');
+            }
+            localStorage.setItem('examTimeRemaining', timeRemaining);
         }
 
         document.getElementById('nextButton').addEventListener('click', () => {
@@ -299,6 +324,7 @@
             for (let [questionId, answerId] of answers) {
                 document.getElementById(`answer_${questionId}_hidden`).value = answerId;
             }
+            localStorage.removeItem('examTimeRemaining'); // Clear timer on submission
             document.getElementById('mcq_form').submit();
         }
 
@@ -310,13 +336,16 @@
         function showNotification(message) {
             if (Notification.permission === "granted") {
                 new Notification("Exam Alert", { body: message, icon: 'https://via.placeholder.com/32' });
-                audio.play().catch(err => console.log("Audio play failed:", err));
+                audio.play().catch(err => console.error("Audio play failed:", err));
             }
         }
 
         function updateStatus() {
             fetch('/status')
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
                 .then(data => {
                     const alertsList = document.getElementById('alertsList');
                     document.getElementById('alertCount').textContent = data.warnings;
@@ -327,10 +356,11 @@
                                 <i class="ri-error-warning-line text-warningRed w-5 h-5 flex items-center justify-center"></i>
                                 <div>
                                     <p class="text-sm text-warningRed">${data.message}</p>
-                                    <span class="text-xs text-warningRed/80">Just now</span>
+                                    <span class="text-xs text-warningRed/80">${new Date().toLocaleTimeString()}</span>
                                 </div>
                             </div>
                         `;
+                        alertsList.scrollTop = alertsList.scrollHeight; // Auto-scroll to latest alert
                     }
                     if (!data.exam_active) {
                         window.location.href = "{{ url_for('logout') }}";
@@ -339,9 +369,10 @@
                 .catch(err => console.error("Status fetch failed:", err));
         }
 
+        // Initialize
         setInterval(updateStatus, 1000);
         setInterval(updateTimer, 1000);
-        updateQuestion(); // Initialize the first question
+        updateQuestion();
     </script>
 </body>
 </html>
