@@ -1,0 +1,54 @@
+2025-02-23 20:48:08 - Warning 1: No face detected!
+2025-02-23 20:48:13 - Warning 2: No face detected!
+2025-02-23 20:48:18 - Warning 3: No face detected!
+2025-02-23 20:48:18 - User logged out due to max warnings
+2025-02-23 20:48:30 - Warning 1: Looking away from screen!
+2025-02-23 20:48:35 - Warning 2: Looking away from screen!
+2025-02-23 20:48:41 - Warning 3: Looking away from screen!
+2025-02-23 20:48:41 - User logged out due to max warnings
+2025-02-23 20:49:22 - Warning 1: Looking away from screen!
+2025-02-23 20:49:29 - Warning 2: Suspicious object detected: cell phone
+2025-02-23 20:49:34 - Warning 3: No face detected!
+2025-02-23 20:49:40 - Warning 4: Looking away from screen!
+2025-02-23 20:49:46 - Warning 5: Looking away from screen!
+2025-02-23 20:52:35 - Warning 1: Looking away from screen!
+2025-02-23 20:52:40 - Warning 2: Looking away from screen!
+2025-02-23 20:52:45 - Warning 3: Looking away from screen!
+2025-02-23 20:52:50 - Warning 4: Looking away from screen!
+2025-02-23 20:52:55 - Warning 5: Looking away from screen!
+2025-02-23 20:53:00 - Warning 6: Looking away from screen!
+2025-02-23 20:53:05 - Warning 7: Suspicious object detected: cell phone, cell phone
+2025-02-23 20:53:10 - Warning 8: No face detected!
+2025-02-23 20:53:16 - Warning 9: No face detected!
+2025-02-23 20:53:21 - Warning 10: No face detected!
+2025-02-23 20:53:21 - User logged out due to max warnings
+2025-02-23 20:53:47 - Warning 1: No face detected!
+2025-02-23 20:53:53 - Warning 2: Looking away from screen!
+2025-02-23 20:53:58 - Warning 3: Looking away from screen!
+2025-02-23 20:54:03 - Warning 4: Looking away from screen!
+2025-02-23 20:54:08 - Warning 5: Looking away from screen!
+2025-02-23 20:54:13 - Warning 6: No face detected!
+2025-02-23 20:54:18 - Warning 7: Suspicious object detected: cell phone, cell phone, cell phone
+2025-02-23 20:54:24 - Warning 8: No face detected!
+2025-02-23 20:54:29 - Warning 9: Looking away from screen!
+2025-02-23 20:54:34 - Warning 10: Looking away from screen!
+2025-02-23 20:54:34 - User logged out due to max warnings
+2025-02-23 21:20:26 - Started recording for Math 101
+2025-02-23 21:20:27 - Warning 1: Looking away from screen!
+2025-02-23 21:20:34 - Warning 2: Multiple faces detected!
+2025-02-23 21:20:39 - Warning 3: No face detected!
+2025-02-23 21:20:39 - User logged out due to max warnings
+2025-02-23 21:20:39 - Recording saved: recordings/Math 101_20250223_212026.avi, recordings/Math 101_20250223_212026.wav
+2025-02-24 20:41:41 - Started recording for Math 101
+2025-02-24 20:41:47 - Warning 1: Looking away from screen!
+2025-02-24 20:41:52 - Warning 2: Suspicious object detected: cell phone
+2025-02-24 20:41:54 - Recording saved: recordings/Math 101_20250224_204141.avi, recordings/Math 101_20250224_204141.wav
+2025-02-24 21:06:24 - Warning 1: Looking away from screen!
+2025-02-24 21:06:29 - Warning 2: Looking away from screen!
+2025-02-24 21:06:34 - Warning 3: Multiple faces detected!
+2025-02-24 21:06:39 - Warning 4: Looking away from screen!
+2025-02-24 21:06:44 - Warning 5: Looking away from screen!
+2025-02-24 21:06:49 - Warning 6: Looking away from screen!
+2025-02-24 21:06:55 - Warning 7: Looking away from screen!
+2025-02-24 21:07:00 - Warning 8: Looking away from screen!
+2025-02-24 21:07:05 - Warning 9: Looking away from screen!

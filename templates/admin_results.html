@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam Results - AI Proctor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { primary: '#1E88E5', secondary: '#424242', lightGray: '#F5F6F5', warningRed: '#E53935', successGreen: '#43A047' } } }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+</head>
+<body class="bg-lightGray min-h-screen p-4 sm:p-8">
+    <div class="max-w-6xl mx-auto bg-white p-6 rounded-lg shadow-lg">
+        <h1 class="text-2xl font-bold text-secondary mb-6">Exam Results</h1>
+        <!-- Filters -->
+        <div class="mb-6 flex flex-col sm:flex-row gap-4">
+            <div>
+                <label class="text-sm font-medium text-secondary mr-2">Filter by Status:</label>
+                <select onchange="location = this.value;" class="p-2 border rounded-lg text-sm">
+                    <option value="{{ url_for('admin_results', status_filter='all', sort_by=sort_by, sort_order=sort_order) }}" {% if status_filter == 'all' %}selected{% endif %}>All</option>
+                    <option value="{{ url_for('admin_results', status_filter='completed', sort_by=sort_by, sort_order=sort_order) }}" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+                    <option value="{{ url_for('admin_results', status_filter='terminated', sort_by=sort_by, sort_order=sort_order) }}" {% if status_filter == 'terminated' %}selected{% endif %}>Terminated</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-sm font-medium text-secondary mr-2">Sort by:</label>
+                <select onchange="location = this.value;" class="p-2 border rounded-lg text-sm">
+                    <option value="{{ url_for('admin_results', status_filter=status_filter, sort_by='end_time', sort_order=sort_order) }}" {% if sort_by == 'end_time' %}selected{% endif %}>End Time</option>
+                    <option value="{{ url_for('admin_results', status_filter=status_filter, sort_by='warnings', sort_order=sort_order) }}" {% if sort_by == 'warnings' %}selected{% endif %}>Warnings</option>
+                    <option value="{{ url_for('admin_results', status_filter=status_filter, sort_by='full_name', sort_order=sort_order) }}" {% if sort_by == 'full_name' %}selected{% endif %}>User</option>
+                </select>
+                <select onchange="location = this.value;" class="p-2 border rounded-lg text-sm ml-2">
+                    <option value="{{ url_for('admin_results', status_filter=status_filter, sort_by=sort_by, sort_order='desc') }}" {% if sort_order == 'desc' %}selected{% endif %}>Descending</option>
+                    <option value="{{ url_for('admin_results', status_filter=status_filter, sort_by=sort_by, sort_order='asc') }}" {% if sort_order == 'asc' %}selected{% endif %}>Ascending</option>
+                </select>
+            </div>
+        </div>
+        <!-- Results Table -->
+        <table class="w-full border-collapse">
+            <thead>
+                <tr class="bg-gray-100">
+                    <th class="p-3 text-left text-sm font-semibold text-secondary">User</th>
+                    <th class="p-3 text-left text-sm font-semibold text-secondary">Exam</th>
+                    <th class="p-3 text-left text-sm font-semibold text-secondary">Start Time</th>
+                    <th class="p-3 text-left text-sm font-semibold text-secondary">End Time</th>
+                    <th class="p-3 text-left text-sm font-semibold text-secondary">Warnings</th>
+                    <th class="p-3 text-left text-sm font-semibold text-secondary">Status</th>
+                    <th class="p-3 text-left text-sm font-semibold text-secondary">Media</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for result in results %}
+                <tr class="border-t">
+                    <td class="p-3 text-sm text-secondary/80">{{ result.full_name }}</td>
+                    <td class="p-3 text-sm text-secondary/80">{{ result.exam_name }}</td>
+                    <td class="p-3 text-sm text-secondary/80">{{ result.start_time }}</td>
+                    <td class="p-3 text-sm text-secondary/80">{{ result.end_time }}</td>
+                    <td class="p-3 text-sm {% if result.warnings >= max_warnings %}text-warningRed{% else %}text-secondary/80{% endif %}">{{ result.warnings }}</td>
+                    <td class="p-3 text-sm {% if result.status == 'completed' %}text-successGreen{% else %}text-warningRed{% endif %}">{{ result.status }}</td>
+                    <td class="p-3 text-sm">
+                        {% if result.video_file %}
+                        <a href="{{ url_for('serve_media', session_id=result.id, media_type='video') }}" class="text-primary hover:underline mr-2">
+                            <i class="ri-video-line"></i> Video
+                        </a>
+                        {% endif %}
+                        {% if result.audio_file %}
+                        <a href="{{ url_for('serve_media', session_id=result.id, media_type='audio') }}" class="text-primary hover:underline">
+                            <i class="ri-mic-line"></i> Audio
+                        </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <a href="{{ url_for('admin') }}" class="block mt-4 text-primary hover:underline">Back to Admin</a>
+    </div>
+</body>
+</html>

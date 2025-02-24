@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pre-Exam System Check - AI Proctor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1E88E5',  // Tech Blue
+                        secondary: '#424242', // Dark Gray
+                        lightGray: '#F5F6F5',
+                        warningRed: '#E53935',
+                        successGreen: '#43A047'
+                    },
+                    borderRadius: {
+                        'button': '8px'
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .audio-visualizer {
+            height: 40px;
+            background: linear-gradient(to right, rgba(30, 136, 229, 0.2), rgba(30, 136, 229, 0.8));
+            transform-origin: left;
+            transition: transform 0.1s;
+        }
+    </style>
+</head>
+<body class="bg-lightGray min-h-screen">
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm fixed w-full z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center">
+                    <span class="text-2xl font-['Pacifico'] text-primary">AI Proctor</span>
+                </div>
+                <div class="hidden sm:flex items-center space-x-2">
+                    <a href="{{ url_for('index') }}" class="text-secondary hover:text-primary text-sm font-medium">Home</a>
+                    <span class="text-gray-400">/</span>
+                    <a href="{{ url_for('instructions') }}" class="text-secondary hover:text-primary text-sm font-medium">Instructions</a>
+                    <span class="text-gray-400">/</span>
+                    <span class="text-primary text-sm font-medium">Pre-Check</span>
+                </div>
+                <div class="flex items-center">
+                    <a href="{{ url_for('logout') }}" class="rounded-button bg-gray-100 p-2 text-secondary hover:text-primary">
+                        <i class="ri-logout-box-line ri-lg"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-8">
+        <div class="text-center mb-8">
+            <h1 class="text-2xl sm:text-3xl font-bold text-secondary mb-2">Pre-Exam System Check</h1>
+            <p class="text-secondary/80 text-sm sm:text-base">Please complete all system checks before proceeding</p>
+        </div>
+
+        <div class="grid gap-6 sm:gap-8">
+            <!-- Camera Check -->
+            <div class="bg-white p-4 sm:p-6 rounded-lg shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg sm:text-xl font-semibold text-secondary">Camera Check</h2>
+                    <div id="cameraStatus" class="flex items-center gap-2 text-sm">
+                        <span id="cameraStatusText" class="text-warningRed">Checking...</span>
+                        <i class="ri-time-line text-warningRed"></i>
+                    </div>
+                </div>
+                <div class="relative aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                    <video id="video" class="w-full h-full object-cover" autoplay playsinline style="display:none;"></video>
+                    <div id="cameraPlaceholder" class="absolute inset-0 flex items-center justify-center">
+                        <i class="ri-camera-line text-4xl text-gray-400"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Microphone Check -->
+            <div class="bg-white p-4 sm:p-6 rounded-lg shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg sm:text-xl font-semibold text-secondary">Microphone Check</h2>
+                    <div id="micStatus" class="flex items-center gap-2 text-sm">
+                        <span id="micStatusText" class="text-warningRed">Checking...</span>
+                        <i class="ri-time-line text-warningRed"></i>
+                    </div>
+                </div>
+                <div class="bg-gray-100 rounded-lg p-4">
+                    <div id="audioVisualizer" class="audio-visualizer w-full rounded"></div>
+                </div>
+            </div>
+
+            <!-- Internet Check -->
+            <div class="bg-white p-4 sm:p-6 rounded-lg shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg sm:text-xl font-semibold text-secondary">Internet Check</h2>
+                    <div id="internetStatus" class="flex items-center gap-2 text-sm">
+                        <span id="internetStatusText" class="text-warningRed">Checking...</span>
+                        <i class="ri-time-line text-warningRed"></i>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-gray-100 p-4 rounded-lg">
+                        <div class="text-sm text-secondary/80 mb-1">Download Speed</div>
+                        <div id="downloadSpeed" class="text-lg sm:text-xl font-semibold">-- Mbps</div>
+                    </div>
+                    <div class="bg-gray-100 p-4 rounded-lg">
+                        <div class="text-sm text-secondary/80 mb-1">Upload Speed</div>
+                        <div id="uploadSpeed" class="text-lg sm:text-xl font-semibold">-- Mbps</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Start Exam Button -->
+            <div class="text-center mt-6 sm:mt-8">
+                <form method="post" action="{{ url_for('start_exam') }}" id="start_form" class="hidden">
+                    <button type="submit" id="start_button" class="bg-primary text-white px-6 sm:px-8 py-2 sm:py-3 rounded-button hover:bg-primary/90 text-sm sm:text-lg font-semibold transition-colors">
+                        Start Exam
+                    </button>
+                </form>
+                <p id="error_message" class="text-sm text-warningRed mt-2 hidden">Please resolve issues to proceed.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function runChecks() {
+            let allChecksPassed = true;
+
+            // Camera Check
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const video = document.getElementById('video');
+                video.srcObject = stream;
+                video.style.display = 'block';
+                document.getElementById('cameraPlaceholder').style.display = 'none';
+                document.getElementById('cameraStatus').innerHTML = `
+                    <span class="text-successGreen">OK</span>
+                    <i class="ri-checkbox-circle-line text-successGreen"></i>
+                `;
+            } catch (err) {
+                document.getElementById('cameraStatus').innerHTML = `
+                    <span class="text-warningRed">Failed (Permission denied or not detected)</span>
+                    <i class="ri-close-circle-line text-warningRed"></i>
+                `;
+                allChecksPassed = false;
+            }
+
+            // Microphone Check
+            try {
+                const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const audioContext = new AudioContext();
+                const analyser = audioContext.createAnalyser();
+                const microphone = audioContext.createMediaStreamSource(micStream);
+                microphone.connect(analyser);
+                
+                analyser.fftSize = 256;
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+                
+                function visualize() {
+                    analyser.getByteFrequencyData(dataArray);
+                    const average = dataArray.reduce((a, b) => a + b) / bufferLength;
+                    document.getElementById('audioVisualizer').style.transform = `scaleX(${average / 128})`;
+                    if (micStream.active) requestAnimationFrame(visualize);
+                }
+                
+                visualize();
+                document.getElementById('micStatus').innerHTML = `
+                    <span class="text-successGreen">OK</span>
+                    <i class="ri-checkbox-circle-line text-successGreen"></i>
+                `;
+                setTimeout(() => micStream.getTracks().forEach(track => track.stop()), 5000); // Stop after 5s
+            } catch (err) {
+                document.getElementById('micStatus').innerHTML = `
+                    <span class="text-warningRed">Failed (Permission denied or not detected)</span>
+                    <i class="ri-close-circle-line text-warningRed"></i>
+                `;
+                allChecksPassed = false;
+            }
+
+            // Internet Check
+            try {
+                const response = await fetch('/status', { cache: "no-store" });
+                if (response.ok) {
+                    document.getElementById('internetStatus').innerHTML = `
+                        <span class="text-successGreen">OK</span>
+                        <i class="ri-checkbox-circle-line text-successGreen"></i>
+                    `;
+                    document.getElementById('downloadSpeed').textContent = '50 Mbps'; // Simulated
+                    document.getElementById('uploadSpeed').textContent = '20 Mbps'; // Simulated
+                } else {
+                    throw new Error("Network error");
+                }
+            } catch (err) {
+                document.getElementById('internetStatus').innerHTML = `
+                    <span class="text-warningRed">Failed (Connection issue)</span>
+                    <i class="ri-close-circle-line text-warningRed"></i>
+                `;
+                document.getElementById('downloadSpeed').textContent = '-- Mbps';
+                document.getElementById('uploadSpeed').textContent = '-- Mbps';
+                allChecksPassed = false;
+            }
+
+            // Show Start Button or Error
+            document.getElementById('start_form').classList.remove('hidden');
+            if (allChecksPassed) {
+                document.getElementById('start_button').disabled = false;
+            } else {
+                document.getElementById('start_button').disabled = true;
+                document.getElementById('error_message').classList.remove('hidden');
+            }
+        }
+
+        window.onload = runChecks;
+    </script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - AI Proctor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { primary: '#1E88E5', secondary: '#424242', lightGray: '#F5F6F5', warningRed: '#E53935', successGreen: '#43A047' } } }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-lightGray min-h-screen p-4 sm:p-8">
+    <div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-lg">
+        <h1 class="text-2xl font-bold text-secondary mb-6">Admin - Manage Exams</h1>
+        {% if error %}
+        <div class="bg-warningRed text-white p-4 rounded-lg mb-4">{{ error }}</div>
+        {% endif %}
+        {% if message %}
+        <div class="bg-successGreen text-white p-4 rounded-lg mb-4">{{ message }}</div>
+        {% endif %}
+        <form method="post" class="space-y-4 mb-6">
+            <input type="text" name="exam_name" placeholder="Exam Name" required class="w-full p-2 border rounded-lg">
+            <input type="text" name="suspicious_objects" placeholder="Suspicious Objects (comma-separated)" required class="w-full p-2 border rounded-lg">
+            <button type="submit" class="bg-primary text-white px-4 py-2 rounded-button hover:bg-primary/90">Add Exam</button>
+        </form>
+        <h2 class="text-xl font-semibold text-secondary mb-4">Existing Exams</h2>
+        <ul class="space-y-2">
+            {% for exam in exams %}
+            <li class="flex justify-between items-center p-2 bg-gray-100 rounded-lg">
+                <span>{{ exam.name }}</span>
+                <a href="{{ url_for('add_question', exam_id=exam.id) }}" class="text-primary hover:underline">Add Question</a>
+            </li>
+            {% endfor %}
+        </ul>
+        <div class="mt-6 flex space-x-4">
+            <a href="{{ url_for('admin_results') }}" class="text-primary hover:underline">View Exam Results</a>
+            <a href="{{ url_for('select_exam') }}" class="text-primary hover:underline">Back to Exams</a>
+        </div>
+    </div>
+</body>
+</html>

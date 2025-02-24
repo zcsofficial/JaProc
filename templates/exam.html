@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ exam_name }} - AI Proctor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1E88E5',  // Tech Blue
+                        secondary: '#424242', // Dark Gray
+                        lightGray: '#F5F6F5',
+                        warningRed: '#E53935',
+                        successGreen: '#43A047'
+                    },
+                    borderRadius: {
+                        'button': '8px'
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .question-option:checked + label {
+            background-color: rgba(30, 136, 229, 0.1);
+            border-color: #1E88E5;
+        }
+        .alert-badge {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .answered { background-color: #43A047; color: white; }
+        .current { background-color: #1E88E5; color: white; }
+    </style>
+</head>
+<body class="bg-lightGray min-h-screen">
+    <div class="max-w-[1440px] mx-auto">
+        <!-- Header -->
+        <header class="bg-white shadow-sm">
+            <nav class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between">
+                <div class="flex items-center gap-2 mb-2 sm:mb-0">
+                    <span class="font-['Pacifico'] text-xl sm:text-2xl text-primary">AI Proctor</span>
+                    <span class="text-base sm:text-lg font-semibold">{{ exam_name }}</span>
+                    <span class="text-sm text-secondary/80">Code: {{ exam_code }}</span>
+                </div>
+                <div class="flex items-center gap-2 sm:gap-4">
+                    <span id="timer" class="text-sm text-secondary/80">Time Remaining: 01:00:00</span>
+                    <a href="{{ url_for('logout') }}" class="flex items-center gap-2 text-secondary hover:text-primary rounded-button px-3 py-1 sm:px-4 sm:py-2 text-sm">
+                        <i class="ri-logout-box-line w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center"></i>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </nav>
+        </header>
+
+        <!-- Main Content -->
+        <main class="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-6">
+            <!-- Left Sidebar (Monitoring Status) -->
+            <div class="col-span-1 md:col-span-3">
+                <div class="bg-white rounded-lg shadow-sm p-4">
+                    <h3 class="font-semibold text-secondary mb-4">AI Monitoring Status</h3>
+                    <div class="space-y-4 text-sm">
+                        <div class="flex items-center justify-between">
+                            <span class="text-secondary/80 flex items-center gap-2">
+                                <i class="ri-face-recognition-line w-5 h-5 flex items-center justify-center"></i>
+                                Face Detection
+                            </span>
+                            <span id="faceStatus" class="text-successGreen">Active</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-secondary/80 flex items-center gap-2">
+                                <i class="ri-eye-line w-5 h-5 flex items-center justify-center"></i>
+                                Eye Tracking
+                            </span>
+                            <span id="eyeStatus" class="text-successGreen">Active</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-secondary/80 flex items-center gap-2">
+                                <i class="ri-mic-line w-5 h-5 flex items-center justify-center"></i>
+                                Audio Monitoring
+                            </span>
+                            <span id="audioStatus" class="text-successGreen">Active</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Exam Questions -->
+            <div class="col-span-1 md:col-span-6">
+                <div class="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+                    <div class="flex items-center justify-between mb-4 sm:mb-6">
+                        <h2 class="text-lg sm:text-xl font-semibold text-secondary" id="questionHeader">Question {{ current_question_number }} of {{ total_questions }}</h2>
+                        <div class="flex items-center gap-2 sm:gap-4">
+                            <span class="text-sm text-secondary/80">Progress:</span>
+                            <div class="w-24 sm:w-48 h-2 bg-gray-100 rounded-full">
+                                <div id="progressBar" class="h-full bg-primary rounded-full" style="width: {{ (current_question_number / total_questions * 100) }}%;"></div>
+                            </div>
+                            <span class="text-sm text-secondary/80">{{ current_question_number }}/{{ total_questions }}</span>
+                        </div>
+                    </div>
+
+                    <form id="mcq_form" method="post" action="{{ url_for('submit_exam') }}">
+                        <div class="space-y-4 sm:space-y-6">
+                            <p id="questionText" class="text-secondary">{{ current_question.question_text }}</p>
+                            <div id="options" class="space-y-2 sm:space-y-3">
+                                {% for answer in current_question.answers %}
+                                <div class="relative">
+                                    <input type="radio" name="answer_{{ current_question.id }}" id="option_{{ answer.id }}" value="{{ answer.id }}" class="question-option absolute opacity-0">
+                                    <label for="option_{{ answer.id }}" class="block w-full p-2 sm:p-3 border rounded-lg cursor-pointer hover:bg-gray-50 text-sm sm:text-base">
+                                        {{ answer.answer_text }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between pt-4 sm:pt-6">
+                            <button type="button" id="prevButton" class="flex items-center gap-2 px-3 sm:px-4 py-1 sm:py-2 border border-gray-200 rounded-button hover:bg-gray-50 text-sm disabled:opacity-50" disabled>
+                                <i class="ri-arrow-left-line w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center"></i>
+                                Previous
+                            </button>
+                            <button type="button" id="nextButton" class="flex items-center gap-2 px-3 sm:px-4 py-1 sm:py-2 bg-primary text-white rounded-button hover:bg-primary/90 text-sm">
+                                Next
+                                <i class="ri-arrow-right-line w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center"></i>
+                            </button>
+                        </div>
+                        <!-- Hidden inputs for all answers -->
+                        {% for question in questions %}
+                        <input type="hidden" name="answers[{{ question.id }}]" id="answer_{{ question.id }}_hidden">
+                        {% endfor %}
+                    </form>
+                </div>
+            </div>
+
+            <!-- Right Sidebar (Question Palette and Alerts) -->
+            <div class="col-span-1 md:col-span-3">
+                <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+                    <h3 class="font-semibold text-secondary mb-4">Question Palette</h3>
+                    <div id="questionPalette" class="grid grid-cols-5 gap-2">
+                        {% for question in questions %}
+                        <button class="w-8 h-8 rounded text-sm font-medium flex items-center justify-center {% if loop.index0 == current_question_number - 1 %}current{% endif %}" data-index="{{ loop.index0 }}">{{ loop.index }}</button>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm p-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-semibold text-secondary">Recent Alerts</h3>
+                        <span id="alertCount" class="alert-badge inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-warningRed rounded-full">0</span>
+                    </div>
+                    <div id="alertsList" class="space-y-3">
+                        <!-- Alerts will be populated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="fixed bottom-0 left-0 right-0 bg-white border-t">
+            <div class="max-w-[1440px] mx-auto px-4 sm:px-6 py-4 flex items-center justify-end gap-2 sm:gap-4">
+                <button id="submitButton" class="flex items-center gap-2 px-4 sm:px-6 py-1 sm:py-2 bg-primary text-white rounded-button hover:bg-primary/90 text-sm sm:text-base">
+                    Submit Exam
+                </button>
+            </div>
+        </footer>
+
+        <!-- Submit Confirmation Dialog -->
+        <div id="submitConfirmDialog" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg p-4 sm:p-6 w-full max-w-md mx-4">
+                <h3 class="text-base sm:text-lg font-semibold text-secondary mb-4">Confirm Submission</h3>
+                <p class="text-secondary/80 text-sm sm:text-base mb-6">Are you sure you want to submit your exam? This action cannot be undone.</p>
+                <div class="flex items-center justify-end gap-2 sm:gap-4">
+                    <button onclick="closeSubmitDialog()" class="px-3 sm:px-4 py-1 sm:py-2 border border-gray-200 rounded-button hover:bg-gray-50 text-sm">Cancel</button>
+                    <button onclick="submitExam()" class="px-3 sm:px-4 py-1 sm:py-2 bg-primary text-white rounded-button hover:bg-primary/90 text-sm">Submit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audio for Alerts -->
+    <audio id="alert_sound" src="https://www.soundjay.com/buttons/beep-01a.mp3" preload="auto"></audio>
+
+    <script>
+        let currentQuestionIndex = {{ current_question_number - 1 }};
+        const totalQuestions = {{ total_questions }};
+        const questions = [
+            {% for question in questions %}
+            {
+                id: {{ question.id }},
+                text: "{{ question.question_text }}",
+                answers: [
+                    {% for answer in question.answers %}
+                    { id: {{ answer.id }}, text: "{{ answer.answer_text }}" },
+                    {% endfor %}
+                ]
+            },
+            {% endfor %}
+        ];
+        const answers = new Map(); // Store selected answers client-side
+        const examDuration = 60 * 60; // 1 hour in seconds (adjust as needed)
+        let timeRemaining = examDuration;
+
+        function updateQuestion() {
+            const question = questions[currentQuestionIndex];
+            document.getElementById('questionHeader').textContent = `Question ${currentQuestionIndex + 1} of ${totalQuestions}`;
+            document.getElementById('questionText').textContent = question.text;
+            const optionsDiv = document.getElementById('options');
+            optionsDiv.innerHTML = question.answers.map(answer => `
+                <div class="relative">
+                    <input type="radio" name="answer_${question.id}" id="option_${answer.id}" value="${answer.id}" class="question-option absolute opacity-0" ${answers.get(question.id) === answer.id ? 'checked' : ''}>
+                    <label for="option_${answer.id}" class="block w-full p-2 sm:p-3 border rounded-lg cursor-pointer hover:bg-gray-50 text-sm sm:text-base">
+                        ${answer.text}
+                    </label>
+                </div>
+            `).join('');
+            document.getElementById('progressBar').style.width = `${((currentQuestionIndex + 1) / totalQuestions) * 100}%`;
+            document.getElementById('prevButton').disabled = currentQuestionIndex === 0;
+            document.getElementById('nextButton').textContent = currentQuestionIndex === totalQuestions - 1 ? 'Finish' : 'Next';
+            updatePalette();
+        }
+
+        function updatePalette() {
+            const palette = document.getElementById('questionPalette').children;
+            for (let i = 0; i < palette.length; i++) {
+                palette[i].classList.remove('current', 'answered');
+                if (i === currentQuestionIndex) {
+                    palette[i].classList.add('current');
+                } else if (answers.has(questions[i].id)) {
+                    palette[i].classList.add('answered');
+                }
+            }
+        }
+
+        function saveAnswer() {
+            const selected = document.querySelector(`input[name="answer_${questions[currentQuestionIndex].id}"]:checked`);
+            if (selected) {
+                answers.set(questions[currentQuestionIndex].id, parseInt(selected.value));
+            }
+        }
+
+        function updateTimer() {
+            timeRemaining--;
+            if (timeRemaining <= 0) {
+                submitExam();
+                return;
+            }
+            const hours = Math.floor(timeRemaining / 3600);
+            const minutes = Math.floor((timeRemaining % 3600) / 60);
+            const seconds = timeRemaining % 60;
+            document.getElementById('timer').textContent = `Time Remaining: ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        document.getElementById('nextButton').addEventListener('click', () => {
+            saveAnswer();
+            if (currentQuestionIndex < totalQuestions - 1) {
+                currentQuestionIndex++;
+                updateQuestion();
+            }
+        });
+
+        document.getElementById('prevButton').addEventListener('click', () => {
+            saveAnswer();
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                updateQuestion();
+            }
+        });
+
+        document.getElementById('questionPalette').addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            if (btn) {
+                saveAnswer();
+                currentQuestionIndex = parseInt(btn.dataset.index);
+                updateQuestion();
+            }
+        });
+
+        document.getElementById('submitButton').addEventListener('click', () => {
+            saveAnswer();
+            document.getElementById('submitConfirmDialog').classList.remove('hidden');
+        });
+
+        function closeSubmitDialog() {
+            document.getElementById('submitConfirmDialog').classList.add('hidden');
+        }
+
+        function submitExam() {
+            saveAnswer();
+            for (let [questionId, answerId] of answers) {
+                document.getElementById(`answer_${questionId}_hidden`).value = answerId;
+            }
+            document.getElementById('mcq_form').submit();
+        }
+
+        if (Notification.permission !== "granted") {
+            Notification.requestPermission();
+        }
+
+        const audio = document.getElementById('alert_sound');
+        function showNotification(message) {
+            if (Notification.permission === "granted") {
+                new Notification("Exam Alert", { body: message, icon: 'https://via.placeholder.com/32' });
+                audio.play().catch(err => console.log("Audio play failed:", err));
+            }
+        }
+
+        function updateStatus() {
+            fetch('/status')
+                .then(response => response.json())
+                .then(data => {
+                    const alertsList = document.getElementById('alertsList');
+                    document.getElementById('alertCount').textContent = data.warnings;
+                    if (data.warnings > 0 && data.message !== "All good") {
+                        showNotification(`Warning ${data.warnings}: ${data.message}`);
+                        alertsList.innerHTML += `
+                            <div class="flex items-start gap-3 p-3 bg-red-50 rounded-lg">
+                                <i class="ri-error-warning-line text-warningRed w-5 h-5 flex items-center justify-center"></i>
+                                <div>
+                                    <p class="text-sm text-warningRed">${data.message}</p>
+                                    <span class="text-xs text-warningRed/80">Just now</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    if (!data.exam_active) {
+                        window.location.href = "{{ url_for('logout') }}";
+                    }
+                })
+                .catch(err => console.error("Status fetch failed:", err));
+        }
+
+        setInterval(updateStatus, 1000);
+        setInterval(updateTimer, 1000);
+        updateQuestion(); // Initialize the first question
+    </script>
+</body>
+</html>
